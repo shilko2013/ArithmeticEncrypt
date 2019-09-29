@@ -1,10 +1,8 @@
 package primat;
 
 import java.io.*;
-import java.util.List;
+import java.math.BigDecimal;
 import java.util.Scanner;
-
-import static java.lang.Math.log;
 
 public class ArithmeticEncryptUtils {
 
@@ -14,19 +12,20 @@ public class ArithmeticEncryptUtils {
         printStream.println("Для начала работы");
     }
 
-    public static Object getActionFromInputWithOutput(PrintStream outputStream, InputStream inputStream) {
+    public static ArithmeticEncrypter getArithmeticEncrypterFromInputWithOutput(PrintStream outputStream, InputStream inputStream) {
         Scanner in = new Scanner(inputStream);
         while (true) {
             try {
-                outputStream.print("Введите 0 чтобы ввести путь к файлу для его кодирования," +
+                outputStream.print("Введите 0 чтобы ввести путь к файлу для его кодирования и декодирования" +
                         "\n 1 чтобы ввести путь к файлу и код для декодирования," +
                         "\n q или 2 для выхода из программы: ");
                 String token = in.next();
                 switch (token) {
                     case "0":
-                        return new ArithmeticEncrypter(new FileInputStream(new File(readFilename(outputStream, inputStream))));
-                    case "1":
-                        return new ArithmeticDecrypter(new FileOutputStream(new File(readFilename(outputStream, inputStream))), readCode(outputStream, inputStream));
+                        File output = new File(readFilename(outputStream, inputStream, "выходного"));
+                        output.createNewFile();
+                        return new ArithmeticEncrypter(new FileInputStream(new File(readFilename(outputStream, inputStream, "входного"))),
+                                new FileOutputStream(output));
                     case "2":
                     case "q":
                         System.exit(0);
@@ -35,18 +34,18 @@ public class ArithmeticEncryptUtils {
                 }
             } catch (FileNotFoundException e) {
                 outputStream.println("Файл не найден, повторите ввод.\n");
-            }  catch (Exception e) {
+            } catch (Exception e) {
                 outputStream.println("Произошла ошибка ввода, повторите ввод.\n");
                 in.nextLine();
             }
         }
     }
 
-    private static String readFilename(PrintStream outputStream, InputStream inputStream) {
+    private static String readFilename(PrintStream outputStream, InputStream inputStream, String fileType) {
         Scanner in = new Scanner(inputStream);
         while (true) {
             try {
-                outputStream.print("Введите имя файла: ");
+                outputStream.print("Введите имя " + fileType + " файла: ");
                 String filename = in.nextLine();
                 outputStream.println("Имя файла введено.");
                 return filename;
@@ -57,14 +56,14 @@ public class ArithmeticEncryptUtils {
         }
     }
 
-    private static double readCode(PrintStream outputStream, InputStream inputStream) {
+    private static BigDecimal readCode(PrintStream outputStream, InputStream inputStream) {
         Scanner in = new Scanner(inputStream);
         while (true) {
             try {
                 outputStream.print("Введите код: ");
                 String code = in.nextLine();
                 outputStream.println("Код введен.");
-                return Double.parseDouble(code.replace(',','.'));
+                return new BigDecimal(code.replace(',', '.'));
             } catch (Exception e) {
                 outputStream.println("Ошибка ввода, повторите ввод.");
                 in.nextLine();
@@ -75,19 +74,14 @@ public class ArithmeticEncryptUtils {
     public static void main(String... args) {
         printHeader(System.out);
         while (true) {
-            Object action = getActionFromInputWithOutput(System.out, System.in);
+            ArithmeticEncrypter arithmeticEncrypter = getArithmeticEncrypterFromInputWithOutput(System.out, System.in);
             try {
-                if (action instanceof ArithmeticEncrypter) {
-                    ArithmeticEncrypter arithmeticEncrypter = (ArithmeticEncrypter) action;
-                    arithmeticEncrypter.readTextAndFillCounts();
-                    arithmeticEncrypter.fillProbabilities();
-                    System.out.println("Код: " + arithmeticEncrypter.getCode());
-                } else {
-
-                }
+                arithmeticEncrypter.readTextAndFillCounts();
+                arithmeticEncrypter.fillProbabilities();
+                System.out.println("Код: " + arithmeticEncrypter.getCode());
+                arithmeticEncrypter.decode();
                 System.out.println();
-                throw new IOException();//!!!
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.out.println("Введено неверное имя файла, пожалуйста, следуйте инструкциям.");
             }
         }
